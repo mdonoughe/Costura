@@ -64,7 +64,7 @@ public abstract class BaseCosturaTest
         assembly = Assembly.LoadFile(isolatedPath);
     }
 
-    [Test, RunInApplicationDomain]
+    [Test, RunInApplicationDomain, Category("Code")]
     public void Simple()
     {
         var instance2 = assembly.GetInstance("ClassToTest");
@@ -73,7 +73,7 @@ public abstract class BaseCosturaTest
 
 #if DEBUG
 
-    [Test]
+    [Test, Category("IL")]
     public void TemplateHasCorrectSymbols()
     {
         using (ApprovalResults.ForScenario(Suffix))
@@ -84,7 +84,7 @@ public abstract class BaseCosturaTest
 
 #endif
 
-    [Test]
+    [Test, Category("IL")]
     public void PeVerify()
     {
         Verifier.Verify(beforeAssemblyPath, afterAssemblyPath);

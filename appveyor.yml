@@ -5,4 +5,8 @@ before_build:
 
 build:
   parallel: true
-  project: src/Costura.sln
+  project: src\Costura.sln
+
+test:
+  assemblies:
+    - src\Costura.Tests\bin\Release\Costura.Tests.dll
