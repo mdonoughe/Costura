@@ -52,14 +52,14 @@ public abstract class BaseCosturaTest
         }
 
         Directory.CreateDirectory(Suffix);
-        var isolatedPath = Path.Combine(Suffix, $"Costura{Suffix}.exe");
+        var isolatedPath = Path.GetFullPath(Path.Combine(Suffix, $"Costura{Suffix}.exe"));
         File.Copy(afterAssemblyPath, isolatedPath, true);
         File.Copy(afterAssemblyPath.Replace(".exe", ".pdb"), isolatedPath.Replace(".exe", ".pdb"), true);
     }
 
     protected void LoadAssemblyIntoAppDomain()
     {
-        var isolatedPath = Path.Combine(Suffix, $"Costura{Suffix}.exe");
+        var isolatedPath = Path.GetFullPath(Path.Combine(Suffix, $"Costura{Suffix}.exe"));
 
         assembly = Assembly.LoadFile(isolatedPath);
     }
