@@ -59,7 +59,7 @@ public abstract class BaseCosturaTest
 
     protected void LoadAssemblyIntoAppDomain()
     {
-        var isolatedPath = Path.Combine(Path.GetTempPath(), $"Costura{Suffix}.exe");
+        var isolatedPath = Path.Combine(Suffix, $"Costura{Suffix}.exe");
 
         assembly = Assembly.LoadFile(isolatedPath);
     }
