@@ -1,5 +1,8 @@
 configuration: Release
 
+cache:
+  - src/packages -> src/**/packages.config
+
 before_build:
   - nuget restore src\Costura.sln
 
@@ -10,3 +13,10 @@ build:
 test:
   assemblies:
     - src\Costura.Tests\bin\Release\Costura.Tests.dll
+
+notifications:
+  - provider: Gitter
+    url:
+      secure: ADqyYaxb/z2evPPo9ePX5zLWgH+k8amoEYDjm5cczl/TpPzKx1bHy4ABqpjD0835ZM717+lVtnWIYc7BDT3m9g==
+    on_build_success: true
+    on_build_failure: true
