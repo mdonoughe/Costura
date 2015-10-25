@@ -5,3 +5,8 @@ before_build:
 
 artifacts:
   - path: NuGetBuild\*.nupkg
+
+test_script:
+  - nunit-console-x86 "C:\projects\costura\Tests\bin\Release\Tests.dll"
+  - nunit-console-x86 "C:\projects\costura\Tests2\bin\Release\Tests.dll"
+  - nunit-console-x86 "C:\projects\costura\Tests3\bin\Release\Tests.dll"
