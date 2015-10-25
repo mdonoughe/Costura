@@ -30,7 +30,7 @@ public static class Decompiler
             var checksumPattern = new Regex(@"^(\s*IL_[0123456789abcdef]{4}:  ldstr\s*"")[0123456789ABCDEF]{32,40}""", RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
 
             return string.Join(Environment.NewLine, Regex.Split(process.StandardOutput.ReadToEnd(), Environment.NewLine)
-                    .Where(l => !l.StartsWith("// ") && !string.IsNullOrEmpty(l))
+                    .Where(l => !l.StartsWith("// ", StringComparison.CurrentCulture) && !string.IsNullOrEmpty(l))
                     .Select(l => l.Replace(projectFolder, ""))
                     .Select(l => checksumPattern.Replace(l, e => e.Groups[1].Value + "[CHECKSUM]\""))
                     .ToList());
