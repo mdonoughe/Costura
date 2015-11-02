@@ -43,18 +43,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
-    <Compile Include="EmbeddedResourceManager.cs" />
-    <Compile Include="Extensions.cs" />
+    <Compile Include="AssemblyLoaderImporter.cs" />
+    <Compile Include="Checksums.cs" />
     <Compile Include="Configuration.cs" />
+    <Compile Include="Extensions.cs" />
+    <Compile Include="HashCalculator.cs" />
+    <Compile Include="ModuleLoaderImporter.cs" />
     <Compile Include="ModuleWeaver.cs" />
-    <Compile Include="TemplateWeaver.cs" />
+    <Compile Include="MsCoreReferenceFinder.cs" />
+    <Compile Include="MsCoreUsage.cs" />
+    <Compile Include="NativeResources.cs" />
+    <Compile Include="ResourceCaseFixer.cs" />
+    <Compile Include="ResourceEmbedder.cs" />
+    <Compile Include="ResourceNameFinder.cs" />
     <Compile Include="WeavingException.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="Janitor, Version=1.1.3.0, Culture=neutral, PublicKeyToken=d34c7d3bba3746e6, processorArchitecture=MSIL">
-      <HintPath>..\packages\Janitor.Fody.1.1.3.0\lib\dotnet\Janitor.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
     <Reference Include="Mono.Cecil, Version=0.9.6.0, Culture=neutral, PublicKeyToken=0738eb9f132ed756, processorArchitecture=MSIL">
       <HintPath>..\packages\FodyCecil.1.29.2\lib\net40\Mono.Cecil.dll</HintPath>
       <Private>True</Private>
@@ -85,27 +89,27 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\bin\$(ConfigurationName)\Costura.Template.dll">
-      <Link>Template\bin\Template.dll</Link>
+      <Link>bin\Template.dll</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\bin\$(ConfigurationName)\Costura.Template.pdb">
-      <Link>Template\bin\Template.pdb</Link>
+      <Link>bin\Template.pdb</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\Common.cs">
-      <Link>Template\src\Common.cs</Link>
+      <Link>src\Common.cs</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\ILTemplate.cs">
-      <Link>Template\src\ILTemplate.cs</Link>
+      <Link>src\ILTemplate.cs</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\ILTemplateWithTempAssembly.cs">
-      <Link>Template\src\ILTemplateWithTempAssembly.cs</Link>
+      <Link>src\ILTemplateWithTempAssembly.cs</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
     <EmbeddedResource Include="$(SolutionDir)Costura.Template\ILTemplateWithUnmanagedHandler.cs">
-      <Link>Template\src\ILTemplateWithUnmanagedHandler.cs</Link>
+      <Link>src\ILTemplateWithUnmanagedHandler.cs</Link>
       <InProject>false</InProject>
     </EmbeddedResource>
   </ItemGroup>
@@ -117,11 +121,9 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\GitVersionTask.3.3.0\build\dotnet\GitVersionTask.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\GitVersionTask.3.3.0\build\dotnet\GitVersionTask.targets'))" />
     <Error Condition="!Exists('..\packages\Fody.1.29.2\build\dotnet\Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Fody.1.29.2\build\dotnet\Fody.targets'))" />
-    <Error Condition="!Exists('..\packages\Janitor.Fody.1.1.3.0\build\dotnet\Janitor.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Janitor.Fody.1.1.3.0\build\dotnet\Janitor.Fody.targets'))" />
     <Error Condition="!Exists('..\packages\Caseless.Fody.1.3.7\build\dotnet\Caseless.Fody.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Caseless.Fody.1.3.7\build\dotnet\Caseless.Fody.targets'))" />
   </Target>
   <Import Project="..\packages\Fody.1.29.2\build\dotnet\Fody.targets" Condition="Exists('..\packages\Fody.1.29.2\build\dotnet\Fody.targets')" />
-  <Import Project="..\packages\Janitor.Fody.1.1.3.0\build\dotnet\Janitor.Fody.targets" Condition="Exists('..\packages\Janitor.Fody.1.1.3.0\build\dotnet\Janitor.Fody.targets')" />
   <Import Project="..\packages\Caseless.Fody.1.3.7\build\dotnet\Caseless.Fody.targets" Condition="Exists('..\packages\Caseless.Fody.1.3.7\build\dotnet\Caseless.Fody.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

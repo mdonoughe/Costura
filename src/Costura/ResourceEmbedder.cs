@@ -3,41 +3,31 @@ using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
 using Mono.Cecil;
 
-class EmbeddedResourceManager : IDisposable
+partial class ModuleWeaver : IDisposable
 {
     readonly List<Stream> streams = new List<Stream>();
-    readonly Dictionary<string, string> checksums = new Dictionary<string, string>();
-    readonly Configuration config;
-    readonly ModuleWeaver weaver;
-
     string cachePath;
 
-    public EmbeddedResourceManager(ModuleWeaver weaver, Configuration config)
+    private void EmbedResources(Configuration config)
     {
-        this.weaver = weaver;
-        this.config = config;
+        if (ReferenceCopyLocalPaths == null)
+        {
+            throw new WeavingException("ReferenceCopyLocalPaths is required you may need to update to the latest version of Fody.");
+        }
 
-        cachePath = Path.Combine(Path.GetDirectoryName(weaver.AssemblyFilePath), "Costura");
+        cachePath = Path.Combine(Path.GetDirectoryName(AssemblyFilePath), "Costura");
         if (!Directory.Exists(cachePath))
         {
             Directory.CreateDirectory(cachePath);
         }
-    }
 
-    public bool HasUnmanagedResources { get; private set; }
-    public string ResourceHash { get; private set; }
-
-    public void Embed()
-    {
         var assembliesAdded = false;
 
-        var onlyBinaries = weaver.ReferenceCopyLocalPaths.Where(x => x.EndsWith(".dll") || x.EndsWith(".exe"));
+        var onlyBinaries = ReferenceCopyLocalPaths.Where(x => x.EndsWith(".dll") || x.EndsWith(".exe"));
 
-        foreach (var dependency in GetFilteredReferences(onlyBinaries))
+        foreach (var dependency in GetFilteredReferences(onlyBinaries, config))
         {
             var fullPath = Path.GetFullPath(dependency);
 
@@ -84,15 +74,15 @@ class EmbeddedResourceManager : IDisposable
             if (config.Unmanaged32Assemblies.Any(x => x == Path.GetFileNameWithoutExtension(dependency)))
             {
                 prefix = "costura32.";
-                HasUnmanagedResources = true;
+                hasUnmanaged = true;
             }
             if (config.Unmanaged64Assemblies.Any(x => x == Path.GetFileNameWithoutExtension(dependency)))
             {
                 prefix = "costura64.";
-                HasUnmanagedResources = true;
+                hasUnmanaged = true;
             }
 
-            if (string.IsNullOrEmpty(prefix))
+            if (String.IsNullOrEmpty(prefix))
             {
                 continue;
             }
@@ -118,27 +108,11 @@ class EmbeddedResourceManager : IDisposable
 
         if (!assembliesAdded)
         {
-            weaver.LogInfo("No assemblies were embedded");
+            LogInfo("No assemblies were embedded");
         }
     }
 
-    public void Dispose()
-    {
-        throw new NotImplementedException();
-    }
-
-    private void DisposeManaged()
-    {
-        if (streams != null)
-        {
-            foreach (var stream in streams)
-            {
-                stream.Dispose();
-            }
-        }
-    }
-
-    private IEnumerable<string> GetFilteredReferences(IEnumerable<string> onlyBinaries)
+    private IEnumerable<string> GetFilteredReferences(IEnumerable<string> onlyBinaries, Configuration config)
     {
         if (config.IncludeAssemblies.Any())
         {
@@ -159,12 +133,12 @@ class EmbeddedResourceManager : IDisposable
 
             if (skippedAssemblies.Count > 0)
             {
-                if (weaver.References == null)
+                if (References == null)
                 {
                     throw new WeavingException("To embed references with CopyLocal='false', References is required - you may need to update to the latest version of Fody.");
                 }
 
-                var splittedReferences = weaver.References.Split(';');
+                var splittedReferences = References.Split(';');
 
                 foreach (var skippedAssembly in skippedAssemblies)
                 {
@@ -173,7 +147,7 @@ class EmbeddedResourceManager : IDisposable
                                     select splittedReference).FirstOrDefault();
                     if (string.IsNullOrEmpty(fileName))
                     {
-                        weaver.LogError(string.Format("Assembly '{0}' cannot be found (not even as CopyLocal='false'), please update the configuration", skippedAssembly));
+                        LogError(string.Format("Assembly '{0}' cannot be found (not even as CopyLocal='false'), please update the configuration", skippedAssembly));
                     }
 
                     yield return fileName;
@@ -216,9 +190,9 @@ class EmbeddedResourceManager : IDisposable
     private string Embed(string prefix, string fullPath, bool compress)
     {
         var resourceName = String.Format("{0}{1}", prefix, Path.GetFileName(fullPath).ToLowerInvariant());
-        if (weaver.ModuleDefinition.Resources.Any(x => x.Name == resourceName))
+        if (ModuleDefinition.Resources.Any(x => x.Name == resourceName))
         {
-            weaver.LogInfo(string.Format("\tSkipping '{0}' because it is already embedded", fullPath));
+            LogInfo(string.Format("\tSkipping '{0}' because it is already embedded", fullPath));
             return resourceName;
         }
 
@@ -227,7 +201,7 @@ class EmbeddedResourceManager : IDisposable
             resourceName = String.Format("{0}{1}.zip", prefix, Path.GetFileName(fullPath).ToLowerInvariant());
         }
 
-        weaver.LogInfo(string.Format("\tEmbedding '{0}'", fullPath));
+        LogInfo(string.Format("\tEmbedding '{0}'", fullPath));
 
         var checksum = CalculateChecksum(fullPath);
         var cacheFile = Path.Combine(cachePath, String.Format("{0}.{1}", checksum, resourceName));
@@ -265,53 +239,20 @@ class EmbeddedResourceManager : IDisposable
         memoryStream.Position = 0;
         streams.Add(memoryStream);
         var resource = new EmbeddedResource(resourceName, ManifestResourceAttributes.Private, memoryStream);
-        weaver.ModuleDefinition.Resources.Add(resource);
+        ModuleDefinition.Resources.Add(resource);
 
         return resourceName;
     }
 
-    static string CalculateChecksum(string filename)
+    public void Dispose()
     {
-        using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+        if (streams == null)
         {
-            return CalculateChecksum(fs);
+            return;
         }
-    }
-
-    static string CalculateChecksum(Stream stream)
-    {
-        using (var bs = new BufferedStream(stream))
-        using (var sha1 = new SHA1Managed())
+        foreach (var stream in streams)
         {
-            var hash = sha1.ComputeHash(bs);
-            var formatted = new StringBuilder(2 * hash.Length);
-            foreach (var b in hash)
-            {
-                formatted.AppendFormat("{0:X2}", b);
-            }
-            return formatted.ToString();
-        }
-    }
-
-    void CalculateHash()
-    {
-        var data = weaver.ModuleDefinition.Resources.OfType<EmbeddedResource>()
-            .OrderBy(r => r.Name)
-            .Where(r => r.Name.StartsWith("costura"))
-            .SelectMany(r => r.FixedGetResourceData())
-            .ToArray();
-
-        using (var md5 = MD5.Create())
-        {
-            var hashBytes = md5.ComputeHash(data);
-
-            var sb = new StringBuilder();
-            for (var i = 0; i < hashBytes.Length; i++)
-            {
-                sb.Append(hashBytes[i].ToString("X2"));
-            }
-
-            ResourceHash = sb.ToString();
+            stream.Dispose();
         }
     }
 }

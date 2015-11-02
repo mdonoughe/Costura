@@ -44,15 +44,15 @@ public class Configuration
         }
     }
 
-    public bool OptOut { get; }
+    public bool OptOut { get; private set; }
     public bool IncludeDebugSymbols { get; private set; }
     public bool DisableCompression { get; private set; }
     public bool CreateTemporaryAssemblies { get; private set; }
-    public List<string> IncludeAssemblies { get; }
-    public List<string> ExcludeAssemblies { get; }
-    public List<string> Unmanaged32Assemblies { get; }
-    public List<string> Unmanaged64Assemblies { get; }
-    public List<string> PreloadOrder { get; }
+    public List<string> IncludeAssemblies { get; private set; }
+    public List<string> ExcludeAssemblies { get; private set; }
+    public List<string> Unmanaged32Assemblies { get; private set; }
+    public List<string> Unmanaged64Assemblies { get; private set; }
+    public List<string> PreloadOrder { get; private set; }
 
     public static void ReadBool(XElement config, string nodeName, Action<bool> setter)
     {
